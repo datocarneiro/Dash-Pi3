@@ -11,6 +11,11 @@
 
 .bashrc/
 
+venv/
+/venv
+
+.env
+/.env
 
 .bash_history
 .bash_logout

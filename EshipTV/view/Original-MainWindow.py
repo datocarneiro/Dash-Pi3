@@ -165,10 +165,6 @@ class Browser(QWidget):
         self._setup_threads()
         self.setFixedSize(rect.width(), rect.height())
         self.showFullScreen()
-        
-        # CORREÇÃO 1: Iniciar timer de refresh logo após criar a janela
-        # Usar QTimer.singleShot com delay para garantir que tudo esteja inicializado
-        QTimer.singleShot(2000, self._start_refresh_timer)
 
     def _setup_threads(self):
         self.refreash = QTimer(self)
@@ -183,39 +179,9 @@ class Browser(QWidget):
         self.mouseMove.timeout.connect(self._mouse_move)
         self.mouseMove.start(500)
 
-
-
-    ########################################### ADICIONADO NOVO MOTEDO PARA CORREÇÂO ####################################
-
-    def _start_refresh_timer(self):
-        """CORREÇÃO: Método para iniciar o timer de refresh com segurança"""
-        try:
-            timeout = globals.user.get('timeout', 0)
-            if timeout > 0:
-                self.refreash.start(int(timeout * 1000))
-                print(f"[INIT] Timer de refresh iniciado: {timeout}s")
-            else:
-                print("[INIT] Timer desabilitado (timeout = 0)")
-        except Exception as e:
-            print(f"[ERRO] Não foi possível iniciar o timer: {e}")
-
-
-
-    ####################################### CORREÇÃO INVOCANDO O NOVO METODO CRIADO##########################################################################
-
     def _on_page_load(self, ok):
         self.stackLayout.setCurrentIndex(0)
         self.qtReloader.hide()
-        
-        # CORREÇÃO 2: Garantir que o timer reinicie sempre que a página carregar
-        try:
-            timeout = globals.user.get('timeout', 0)
-            if not self.refreash.isActive() and timeout > 0:
-                self.refreash.start(int(timeout * 1000))
-                print(f"[PAGE_LOAD] Timer de refresh reiniciado: {timeout}s")
-        except Exception as e:
-            print(f"[ERRO] Problema ao reiniciar timer: {e}")
-        
         try:
             if str(self.webview.url().url())[:-1] == globals.user["url"]:
                 if globals.user:
@@ -228,6 +194,9 @@ class Browser(QWidget):
                     self.webview.page().runJavaScript(
                         "document.getElementById('" + globals.HTML_ID_BUTTON + "')"
                         ".click();")
+                    if not self.refreash.isActive():
+                        if globals.user['timeout'] != 0:
+                            self.refreash.start(globals.user['timeout'] * 1000)
             elif self.webview.url().url() == URL_LOGGED:
                 pass
         except AttributeError:
@@ -242,6 +211,9 @@ class Browser(QWidget):
                     self.webview.page().currentFrame().evaluateJavaScript(
                         "document.getElementById('" + globals.HTML_ID_BUTTON + "')"
                         ".click();")
+                    if not self.refreash.isActive():
+                        if globals.user['timeout'] != 0:
+                            self.refreash.start(globals.user['timeout'] * 1000)
             elif self.webview.url().path() == URL_LOGGED:
                 pass
 
@@ -259,7 +231,6 @@ class Browser(QWidget):
                     # self.header_timeout = time.time()
 
     def _refresh(self):
-        print(f"[REFRESH] Atualizando página...")
         self.qtReloader.move(self.width() / 2, self.height() / 2)
         self.qtReloader.setAttribute(Qt.WA_ShowWithoutActivating)
         self.qtReloader.show()
